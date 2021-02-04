@@ -1,6 +1,7 @@
 import telebot
 import os
 import configparser
+import fortnite_api
 
 MAIN_SECTION_NAME = 'GENERAL'
 BOT_TOKEN_CONFIGURATION_KEY = 'bot_token'
@@ -9,6 +10,9 @@ CONFIGURATION_NAME = 'config.ini'
 bot_token = ''
 channel_id = 0
 config = None
+api = None
+shop = None
+SHOP_LANGUAGE_DICTIONARY = fortnite_api.GameLanguage.ITALIAN
 
 
 def save_config():
@@ -40,6 +44,20 @@ def load_config():
     channel_id = config.get(MAIN_SECTION_NAME, CHANNEL_ID_CONFIGURATION_KEY)
 
 
+def enable_api():
+    global api
+    api = fortnite_api.FortniteAPI()
+
+
+def load_shop():
+    global shop
+    shop = api.shop.fetch(SHOP_LANGUAGE_DICTIONARY)
+
+
+def enable_bot():
+    bot.polling()
+
+
 if __name__ == '__main__':
     config = configparser.ConfigParser()
     config.read(CONFIGURATION_NAME)
@@ -47,9 +65,14 @@ if __name__ == '__main__':
     setup_config()
     load_config()
 
+    enable_api()
+    load_shop()
+
+    # print(shop.daily.entries)
+
     bot = telebot.TeleBot(bot_token, parse_mode=None)
     print('Bot avviato')
 
-    bot.polling()
+    enable_bot()
 
 
