@@ -5,6 +5,7 @@ import os
 import configparser
 import fortnite_api
 
+from process_images import generate_shop_image
 from timer import Timer
 
 TIMER_TIME_SECONDS = 60
@@ -75,6 +76,7 @@ def enable_api():
 def load_shop():
     global shop
     shop = api.shop.fetch(SHOP_LANGUAGE_DICTIONARY)
+    generate_shop_image(shop)
 
 
 def enable_bot():
@@ -96,7 +98,6 @@ def main_process():
     if not is_enabled:
         print("Il bot è disabilitato")
         return
-
     # print(shop.daily.entries)
 
     bot = telebot.TeleBot(bot_token, parse_mode=None)
