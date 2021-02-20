@@ -1,9 +1,5 @@
-from threading import Event
-
-import telebot
 import os
 import configparser
-import fortnite_api
 
 from process_images import generate_shop_image
 from timer import Timer
@@ -14,7 +10,7 @@ IS_ENABLED_CONFIGURATION_KEY = 'is_enabled'
 BOT_TOKEN_CONFIGURATION_KEY = 'bot_token'
 CHANNEL_ID_CONFIGURATION_KEY = 'channel_id'
 MESSAGE_TO_SEND_CONFIGURATION_KEY = 'message_to_send'
-CREATOR_NAME_CONFIGURATION_KEY = 'creator_name'
+TIMER_TIME_SECONDS_CONFIGURATION_NAME = 'timer_seconds'
 CONFIGURATION_NAME = 'config.ini'
 is_enabled = False
 message_to_send = ''
@@ -27,7 +23,6 @@ shop = None
 timer = None
 stopFlag = None
 LANGUAGE = 'it_IT'
-SHOP_LANGUAGE_DICTIONARY = fortnite_api.GameLanguage.ITALIAN
 
 
 def save_config():
@@ -56,7 +51,7 @@ def setup_config():
     default_config_value(BOT_TOKEN_CONFIGURATION_KEY, '1234567890')
     default_config_value(CHANNEL_ID_CONFIGURATION_KEY, '-987654321')
     default_config_value(MESSAGE_TO_SEND_CONFIGURATION_KEY, 'Messaggio da inserire')
-    default_config_value(CREATOR_NAME_CONFIGURATION_KEY, 'BRAGASWEED')
+    default_config_value(TIMER_TIME_SECONDS_CONFIGURATION_NAME, '120')
 
     save_config()
 
@@ -71,56 +66,11 @@ def load_config():
     global is_enabled
     global message_to_send
     global creator_name
+    global TIMER_TIME_SECONDS
 
     is_enabled = bool(get_config_entry(IS_ENABLED_CONFIGURATION_KEY) == 'True')
     bot_token = get_config_entry(BOT_TOKEN_CONFIGURATION_KEY)
     channel_id = get_config_entry(CHANNEL_ID_CONFIGURATION_KEY)
     message_to_send = get_config_entry(MESSAGE_TO_SEND_CONFIGURATION_KEY)
-    creator_name = get_config_entry(CREATOR_NAME_CONFIGURATION_KEY)
-
-
-def enable_api():
-    global api
-    api = fortnite_api.FortniteAPI()
-
-
-def load_shop():
-    global shop
-    shop = api.shop.fetch(SHOP_LANGUAGE_DICTIONARY)
-    generate_shop_image(shop)
-
-
-def enable_bot():
-    bot.polling()
-
-
-def update_config():
-    load_config()
-
-    enable_api()
-    load_shop()
-
-
-def main_process():
-    global bot
-
-    update_config()
-
-    if not is_enabled:
-        print("Il bot è disabilitato")
-        return
-    # print(shop.daily.entries)
-
-    bot = telebot.TeleBot(bot_token, parse_mode=None)
-    print('Bot avviato')
-
-    enable_bot()
-
-
-def stop_process():
-    stopFlag.set()
-
-    # main_process()
-
-
+    TIMER_TIME_SECONDS = int(get_config_entry(TIMER_TIME_SECONDS_CONFIGURATION_NAME))
 

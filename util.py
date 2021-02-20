@@ -41,11 +41,11 @@ class Utility:
 
         try:
             # Unix-supported zero padding removal
-            return datetime.strptime(date, "%Y-%m-%d").strftime("%A, %B %-d, %Y")
+            return datetime.strptime(date, "%Y-%m-%d").strftime("%A %-d %B %Y")
         except ValueError:
             try:
                 # Windows-supported zero padding removal
-                return datetime.strptime(date, "%Y-%m-%d").strftime("%A, %B %#d, %Y")
+                return datetime.strptime(date, "%Y-%m-%d").strftime("%A %#d %B %Y")
             except Exception as e:
                 log.error(self, f"Failed to convert to human-readable time, {e}")
 

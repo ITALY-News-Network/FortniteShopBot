@@ -1,17 +1,25 @@
-import configparser
+import time
+import requests
 import json
 import logging
 from math import ceil
 from sys import exit
-from time import sleep
 
 import coloredlogs
 from PIL import Image, ImageDraw
 
+import config_utils
 from config_utils import CONFIGURATION_NAME, setup_config, load_config, LANGUAGE
 from util import ImageUtil, Utility
 
 log = logging.getLogger(__name__)
+item_shop_id = 0
+image_saved_name = "itemshop.png"
+logo_header_name = "header_shop.png"
+logo_header_height = 210
+logo_footer_height = 310
+logo_footer_offset = 20
+logo_footer_name = "footer_shop.png"
 coloredlogs.install(level="INFO", fmt="[%(asctime)s] %(message)s", datefmt="%I:%M:%S")
 IMAGE_LOAD_TYPE = "RGBA"
 FEATURED_COLUMNS = 6
@@ -25,6 +33,8 @@ SECTION_SPACING = 300
 columns_length = 0
 daily_length = 0
 featured_length = 0
+date = ""
+
 
 class Athena:
     """Fortnite Item Shop Generator."""
@@ -37,23 +47,50 @@ class Athena:
                 self,
                 "https://fortnite-api.com/shop/br",
                 # {"x-api-key": self.apiKey},
-                {"language": LANGUAGE},)
+                {"language": LANGUAGE}, )
 
-            if itemShop is not None:
-                itemShop = json.loads(itemShop)["data"]
+            global date, item_shop_id
+            itemShop = json.loads(itemShop)["data"]
+            current_item_shop_id = itemShop["hash"]
 
-                # Strip time from the timestamp, we only need the date
-                date = Utility.ISOtoHuman(
-                    self, itemShop["date"].split("T")[0], LANGUAGE
-                )
-                log.info(f"Retrieved Item Shop for {date}")
+            # Strip time from the timestamp, we only need the date
+            current_date = Utility.ISOtoHuman(
+                self, itemShop["date"].split("T")[0], LANGUAGE
+            )
 
-                shopImage = Athena.GenerateImage(self, date, itemShop)
+            date = current_date
+            log.info(f"Retrieved Item Shop for {current_date}")
+
+            if current_item_shop_id != item_shop_id:
+                item_shop_id = current_item_shop_id
+                self.sendImageToChannel(self, current_date, itemShop)
+                # manda immagine
+            else:
+                log.info("Image not generated on this loop (same as previous)")
+
+            log.info(f"End loop, waiting {config_utils.TIMER_TIME_SECONDS} seconds ------")
+            log.info("<---->")
+
+            time.sleep(config_utils.TIMER_TIME_SECONDS)
+            Athena.main(Athena)
+
+    def send_raw_photo(self, image_path, image_caption=""):
+        data = {"chat_id": config_utils.channel_id, "caption": image_caption}
+        url = "https://api.telegram.org/bot%s/sendPhoto" % config_utils.bot_token
+        with open(image_path, "rb") as image_file:
+            ret = requests.post(url, data=data, files={"photo": image_file})
+        return ret.json()
+
+    def sendImageToChannel(self, current_date, itemShop):
+        shopImage = Athena.GenerateImage(self, current_date, itemShop)
+
+        if config_utils.is_enabled:
+            self.send_raw_photo(self, image_saved_name, config_utils.message_to_send.replace("{br}", "\n").replace("{DATE}", date))
 
     def LoadConfiguration(self):
         """
         Set the configuration values specified in configuration.json
-        
+
         Return True if configuration sucessfully loaded.
         """
 
@@ -93,7 +130,8 @@ class Athena:
         daily_length = (DAILY_COLUMNS * CARD_WIDTH) + ((DAILY_COLUMNS - 1) * CARD_OFFSET)
         columns_length = featured_length + daily_length
         rows = max(ceil(len(featured) / FEATURED_COLUMNS), ceil(len(daily) / DAILY_COLUMNS))
-        shopImage = Image.new(IMAGE_LOAD_TYPE, (columns_length + SECTION_SPACING, ((CARD_HEIGHT * rows) + 340) + (rows - 1) * CARD_OFFSET))
+        shopImage = Image.new(IMAGE_LOAD_TYPE, (columns_length + SECTION_SPACING, ((CARD_HEIGHT * rows) + 340) + (
+                rows - 1) * CARD_OFFSET + logo_footer_offset + logo_footer_height))
 
         try:
             background = ImageUtil.Open(self, "background.png")
@@ -107,25 +145,33 @@ class Athena:
             log.warn("Failed to open background.png, defaulting to dark gray")
             shopImage.paste((18, 18, 18), [0, 0, shopImage.size[0], shopImage.size[1]])
 
-        logo = ImageUtil.Open(self, "logo.png")
-        logo = ImageUtil.RatioResize(self, logo, 0, 210)
+        logo = ImageUtil.Open(self, logo_header_name)
+        logo = ImageUtil.RatioResize(self, logo, 0, logo_header_height)
         shopImage.paste(
             logo, ImageUtil.CenterX(self, logo.width, shopImage.width, 20), logo
         )
 
+        logo_footer = ImageUtil.Open(self, logo_footer_name)
+        logo_footer = ImageUtil.RatioResize(self, logo_footer, 0, logo_footer_height)
+        shopImage.paste(
+            logo_footer,
+            ImageUtil.CenterX(self, logo_footer.width, shopImage.width, shopImage.height - logo_footer.height - 20),
+            logo_footer
+        )
+
         canvas = ImageDraw.Draw(shopImage)
-        font = ImageUtil.Font(self, 48)
-        textWidth, _ = font.getsize(date)
+        font = ImageUtil.Font(self, 58)
+        textWidth, _ = font.getsize(date.upper())
         canvas.text(
             ImageUtil.CenterX(self, textWidth, shopImage.width, 255),
             date,
             (255, 255, 255),
             font=font,
         )
-        canvas.text((20, 255), "IN EVIDENZA", (255, 255, 255), font=font)
+        canvas.text((LEFT_OFFSET, 255), "IN EVIDENZA", (255, 255, 255), font=font)
         textWidth, _ = font.getsize("GIORNALIERO")
         canvas.text(
-            (shopImage.width - (textWidth + 20), 255),
+            (shopImage.width - (textWidth + LEFT_OFFSET), 255),
             "GIORNALIERO",
             (255, 255, 255),
             font=font,
@@ -169,7 +215,7 @@ class Athena:
                 i += 1
 
         try:
-            shopImage.save("itemshop.png")
+            shopImage.save(image_saved_name)
             log.info("Generated Item Shop image")
 
             return True
