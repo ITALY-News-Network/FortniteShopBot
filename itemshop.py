@@ -75,7 +75,7 @@ class Athena:
             Athena.main(Athena)
 
     def send_raw_photo(self, image_path, image_caption=""):
-        data = {"chat_id": config_utils.channel_id, "caption": image_caption}
+        data = {"chat_id": config_utils.channel_id, "caption": image_caption, "parse_mode": "HTML"}
         url = "https://api.telegram.org/bot%s/sendPhoto" % config_utils.bot_token
         with open(image_path, "rb") as image_file:
             ret = requests.post(url, data=data, files={"photo": image_file})
@@ -142,7 +142,7 @@ class Athena:
                 background, ImageUtil.CenterX(self, background.width, shopImage.width)
             )
         except FileNotFoundError:
-            log.warn("Failed to open background.png, defaulting to dark gray")
+            log.warning("Failed to open background.png, defaulting to dark gray")
             shopImage.paste((18, 18, 18), [0, 0, shopImage.size[0], shopImage.size[1]])
 
         logo = ImageUtil.Open(self, logo_header_name)
@@ -164,7 +164,7 @@ class Athena:
         textWidth, _ = font.getsize(date.upper())
         canvas.text(
             ImageUtil.CenterX(self, textWidth, shopImage.width, 255),
-            date,
+            date.upper(),
             (255, 255, 255),
             font=font,
         )
@@ -273,7 +273,7 @@ class Athena:
         try:
             layer = ImageUtil.Open(self, f"card_top_{rarity}.png")
         except FileNotFoundError:
-            log.warn(f"Failed to open card_top_{rarity}.png, defaulted to Common")
+            log.warning(f"Failed to open card_top_{rarity}.png, defaulted to Common")
             layer = ImageUtil.Open(self, "card_top_common.png")
 
         card.paste(layer)
@@ -307,7 +307,7 @@ class Athena:
                 try:
                     layer = ImageUtil.Open(self, f"box_bottom_{extraRarity}.png")
                 except FileNotFoundError:
-                    log.warn(
+                    log.warning(
                         f"Failed to open box_bottom_{extraRarity}.png, defaulted to Common"
                     )
                     layer = ImageUtil.Open(self, "box_bottom_common.png")
@@ -335,7 +335,7 @@ class Athena:
                 try:
                     layer = ImageUtil.Open(self, f"box_faceplate_{extraRarity}.png")
                 except FileNotFoundError:
-                    log.warn(
+                    log.warning(
                         f"Failed to open box_faceplate_{extraRarity}.png, defaulted to Common"
                     )
                     layer = ImageUtil.Open(self, "box_faceplate_common.png")
@@ -354,7 +354,7 @@ class Athena:
         try:
             layer = ImageUtil.Open(self, f"card_faceplate_{rarity}.png")
         except FileNotFoundError:
-            log.warn(f"Failed to open card_faceplate_{rarity}.png, defaulted to Common")
+            log.warning(f"Failed to open card_faceplate_{rarity}.png, defaulted to Common")
             layer = ImageUtil.Open(self, "card_faceplate_common.png")
 
         card.paste(layer, layer)
@@ -362,7 +362,7 @@ class Athena:
         try:
             layer = ImageUtil.Open(self, f"card_bottom_{rarity}.png")
         except FileNotFoundError:
-            log.warn(f"Failed to open card_bottom_{rarity}.png, defaulted to Common")
+            log.warning(f"Failed to open card_bottom_{rarity}.png, defaulted to Common")
             layer = ImageUtil.Open(self, "card_bottom_common.png")
 
         card.paste(layer, layer)

@@ -1,9 +1,6 @@
 import os
 import configparser
 
-from process_images import generate_shop_image
-from timer import Timer
-
 TIMER_TIME_SECONDS = 60
 MAIN_SECTION_NAME = 'GENERAL'
 IS_ENABLED_CONFIGURATION_KEY = 'is_enabled'
